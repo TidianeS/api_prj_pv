@@ -1,0 +1,29 @@
+<!-- Fichier : app/templates/base.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestion des Projets{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header class="main-header">
+            <h1>Application de Gestion des Projets PV</h1>
+            <nav>
+                {% if g.user %}
+                    <span>Connecté en tant que : <strong>{{ g.user }}</strong></span>
+                    <a href="{{ url_for('main.logout') }}">Déconnexion</a>
+                {% endif %}
+            </nav>
+        </header>
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+        <footer class="main-footer">
+            <p>© {{ now.year }} - SIEGE 27</p>
+        </footer>
+    </div>
+</body>
+</html>

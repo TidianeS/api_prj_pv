@@ -1,0 +1,6 @@
+# requirements.txt
+Flask
+psycopg2-binary
+python-dotenv
+Flask-Session
+Flask-Cors

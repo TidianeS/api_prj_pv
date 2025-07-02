@@ -1,0 +1,226 @@
+<!-- Fichier : app/templates/index.html (Version corrigée et complète) -->
+{% extends 'base.html' %}
+
+{% block title %}Tableau de Bord - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="management-panel">
+
+    <!-- =============================================== -->
+    <!-- === SECTION POUR AJOUTER UN NOUVEAU PROJET ==== -->
+    <!-- =============================================== -->
+    <section class="add-project-section">
+        <h2>Ajouter un nouveau projet</h2>
+
+        <!-- Étape 1 : Formulaire de recherche de parcelle -->
+        <fieldset class="parcel-search">
+            <legend>1. Rechercher une parcelle</legend>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="search_commune">Commune (Code INSEE)</label>
+                    <input type="text" id="search_commune" placeholder="ex: 27001" maxlength="5">
+                </div>
+                <div class="form-group">
+                    <label for="search_section">Section</label>
+                    <input type="text" id="search_section" placeholder="ex: ZI" maxlength="2"
+                        style="text-transform:uppercase">
+                </div>
+                <div class="form-group">
+                    <label for="search_numero">Numéro</label>
+                    <input type="text" id="search_numero" placeholder="ex: 98" maxlength="4">
+                </div>
+            </div>
+            <button type="button" id="search-parcel-btn" class="button">Rechercher</button>
+            <div id="parcel-results-container">
+                <!-- Les résultats de la recherche AJAX s'afficheront ici -->
+            </div>
+        </fieldset>
+
+        <!-- Étape 2 : Formulaire de détails du projet (caché au début) -->
+        <form id="add-project-form" class="hidden">
+            <fieldset>
+                <legend>2. Informations sur le projet</legend>
+                <!-- Ce champ caché contiendra l'ID de la parcelle sélectionnée -->
+                <input type="hidden" id="parcelle_id" name="parcelle_id" required>
+
+                <p>Parcelle sélectionnée : <strong id="selected-parcel-display"></strong></p>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="nom_projet">Nom du projet</label>
+                        <input type="text" id="nom_projet" name="nom_projet" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="statut">Statut</label>
+                        <select id="statut" name="statut">
+                            <option value="En étude">En étude</option>
+                            <option value="Autorisé">Autorisé</option>
+                            <option value="Construit">Construit</option>
+                            <option value="Annulé">Annulé</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="puissance">Puissance (kWc)</label>
+                        <input type="number" id="puissance" name="puissance" step="0.1">
+                    </div>
+                </div>
+                <button type="submit">Enregistrer le nouveau projet</button>
+            </fieldset>
+        </form>
+    </section>
+
+    <!-- =============================================== -->
+    <!-- === SECTION POUR AFFICHER LES PROJETS EXISTANTS (PARTIE MANQUANTE) -->
+    <!-- =============================================== -->
+    <section class="project-list-section">
+        <h2>Liste des projets existants</h2>
+        <!-- Ce conteneur sera rempli par le JavaScript avec le tableau des projets -->
+        <div id="project-list-container">
+            <p>Chargement des projets...</p>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    // === GESTION DES ÉLÉMENTS DU DOM ===
+    const searchBtn = document.getElementById('search-parcel-btn');
+    const resultsContainer = document.getElementById('parcel-results-container');
+    const addProjectForm = document.getElementById('add-project-form');
+    const hiddenParcelIdInput = document.getElementById('parcelle_id');
+    const selectedParcelDisplay = document.getElementById('selected-parcel-display');
+    const projectListContainer = document.getElementById('project-list-container');
+
+    // === FONCTIONS ===
+    async function loadProjects() {
+        try {
+            const response = await fetch('/api/projects');
+            if (!response.ok) throw new Error('Erreur réseau lors du chargement des projets.');
+
+            const projects = await response.json();
+            let tableHtml = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Parcelle</th><th>Nom</th><th>Statut</th>
+                            <th>Puissance (kWc)</th><th>Date Création</th><th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            if (projects.length === 0) {
+                tableHtml += '<tr><td colspan="7" style="text-align: center;">Aucun projet enregistré.</td></tr>';
+            } else {
+                projects.forEach(p => {
+                    tableHtml += `
+                        <tr>
+                            <td>${p.id}</td>
+                            <td>${p.parcelle_id}</td>
+                            <td>${p.nom_projet}</td>
+                            <td>${p.statut || ''}</td>
+                            <td>${p.puissance_kwc || ''}</td>
+                            <td>${p.date_formatee}</td>
+                            <td><button class="delete-btn" data-id="${p.id}">Supprimer</button></td>
+                        </tr>`;
+                });
+            }
+            tableHtml += '</tbody></table>';
+            projectListContainer.innerHTML = tableHtml;
+        } catch (error) {
+            projectListContainer.innerHTML = `<p class="error-message">${error.message}</p>`;
+        }
+    }
+
+    // === ÉCOUTEURS D'ÉVÉNEMENTS ===
+
+    // 1. Clic sur le bouton "Rechercher" une parcelle
+    searchBtn.addEventListener('click', async () => {
+        const commune = document.getElementById('search_commune').value.trim();
+        const section = document.getElementById('search_section').value.trim().toUpperCase();
+        const numero = document.getElementById('search_numero').value.trim();
+
+        if (!commune || !section || !numero) {
+            alert('Veuillez remplir tous les champs de recherche de parcelle.');
+            return;
+        }
+
+        resultsContainer.innerHTML = '<p>Recherche en cours...</p>';
+
+        // LA LIGNE CORRIGÉE EST ICI
+        const searchURL = `/api/parcels/search?commune=${commune}&section=${section}&numero=${numero}`;
+
+        try {
+            const response = await fetch(searchURL);
+            if (!response.ok) {
+                throw new Error(`Erreur ${response.status} du serveur.`);
+            }
+            const parcels = await response.json();
+
+            if (parcels.length > 0) {
+                let resultsHtml = '<ul>';
+                parcels.forEach(p => {
+                    resultsHtml += `<li><span>${p.id}</span> <button class="select-parcel-btn button" data-parcel-id="${p.id}">Sélectionner</button></li>`;
+                });
+                resultsHtml += '</ul>';
+                resultsContainer.innerHTML = resultsHtml;
+            } else {
+                resultsContainer.innerHTML = '<p>Aucune parcelle trouvée pour ces critères.</p>';
+            }
+        } catch (error) {
+            resultsContainer.innerHTML = `<p class="error-message">${error.message}</p>`;
+        }
+    });
+
+    // 2. Clic sur un bouton "Sélectionner"
+    resultsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('select-parcel-btn')) {
+            const parcelId = e.target.dataset.parcelId;
+            hiddenParcelIdInput.value = parcelId;
+            selectedParcelDisplay.textContent = parcelId;
+            addProjectForm.classList.remove('hidden');
+            resultsContainer.innerHTML = '';
+        }
+    });
+
+    // 3. Soumission du formulaire d'ajout
+    addProjectForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(addProjectForm);
+        const response = await fetch('/api/projects', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            addProjectForm.reset();
+            addProjectForm.classList.add('hidden');
+            loadProjects();
+        } else {
+            const result = await response.json();
+            alert(`Erreur lors de l'ajout du projet: ${result.error}`);
+        }
+    });
+
+    // 4. Clic sur un bouton "Supprimer"
+    projectListContainer.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('delete-btn')) {
+            const projectId = e.target.dataset.id;
+            if (confirm(`Voulez-vous vraiment supprimer le projet ID ${projectId}?`)) {
+                const response = await fetch(`/api/projects/${projectId}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    loadProjects();
+                } else {
+                    const result = await response.json();
+                    alert(`Erreur lors de la suppression: ${result.error}`);
+                }
+            }
+        }
+    });
+
+    // === CHARGEMENT INITIAL ===
+    document.addEventListener('DOMContentLoaded', loadProjects);
+
+</script>
+{% endblock %}

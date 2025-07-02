@@ -1,0 +1,28 @@
+<!-- Fichier : app/templates/login.html -->
+{% extends 'base.html' %}
+
+{% block title %}Connexion - {{ super() }}{% endblock %}
+
+{% block content %}
+    <div class="login-form">
+        <h2>Veuillez vous connecter</h2>
+        
+        <!-- Le formulaire poste sur lui-même (la route /login) -->
+        <form method="POST">
+            <div class="form-group">
+                <label for="username">Nom d'utilisateur</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Connexion</button>
+        </form>
+
+        <!-- Affiche un message d'erreur si Flask en a passé un -->
+        {% if error %}
+            <p class="error-message">{{ error }}</p>
+        {% endif %}
+    </div>
+{% endblock %}

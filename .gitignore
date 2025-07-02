@@ -1,0 +1,46 @@
+# Fichier : .gitignore
+
+# --- Environnement virtuel Python ---
+# Ne jamais versionner l'environnement virtuel
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- Fichiers de configuration locaux et secrets ---
+# Le dossier 'instance' contient des configurations spécifiques
+# à votre machine et ne doit pas être sur le dépôt.
+instance/
+# Le fichier .env contient aussi des secrets.
+.env
+*.env.*
+
+# --- Fichiers générés par Python ---
+# Fichiers de bytecode et caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# --- Fichiers de base de données locaux ---
+# Si vous utilisiez SQLite pour le développement
+*.db
+*.sqlite3
+
+# --- Fichiers générés par les IDE ---
+# VS Code
+.vscode/
+# PyCharm
+.idea/
+
+# --- Dossiers générés par Flask ---
+# Les sessions stockées sur le système de fichiers
+flask_session/
+
+# --- Fichiers de système d'exploitation ---
+# macOS
+.DS_Store
+# Windows
+Thumbs.db
